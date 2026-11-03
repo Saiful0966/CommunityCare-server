@@ -1,7 +1,8 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
+
 
 const PORT = 5000;
 
@@ -40,12 +41,39 @@ app.get('/upcoming-events', async(req, res) =>{
 
 })
 
+// Detale page 
 
 
+app.get('/upcoming-events/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = await eventsCollection.find({ _id: new ObjectId(id) }).toArray();
+    res.send(result[0]);
+})
 
+app.patch('/upcoming-events/join/:id', async (req, res) => {
+  const id = req.params.id;
+  const volunteer = req.body;
+  
+  try {
+    const query = { _id: new ObjectId(id) };
+    const event = await eventsCollection.findOne(query);
+    
+  
+    const alreadyJoined = event?.volunteers?.some(v => v.email === volunteer.email);
+    if (alreadyJoined) {
+      return res.status(400).json({ message: "You have already joined this event!" });
+    }
 
+    const updateDoc = {
+      $push: { volunteers: volunteer },
+    };
 
-
+    const result = await eventsCollection.updateOne(query, updateDoc);
+    res.send(result);
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 
 
