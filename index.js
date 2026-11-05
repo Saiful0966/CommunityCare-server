@@ -107,8 +107,14 @@ app.patch('/manage-events/:id', async (req, res) =>{
 
 
 
+// Delete ManageEvents api
 
 
+app.delete('/manage-events/:id', async(req, res) =>{
+ const {id}= req.params 
+ const result = await eventsCollection.deleteOne({_id: new ObjectId(id)})
+ res.json(result)
+})
 
 
 
