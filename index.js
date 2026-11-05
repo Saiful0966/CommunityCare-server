@@ -41,7 +41,7 @@ app.get('/upcoming-events', async(req, res) =>{
 
 })
 
-// Detale page 
+// Detale page api
 
 
 app.get('/upcoming-events/:id', async (req, res) => {
@@ -74,6 +74,40 @@ app.patch('/upcoming-events/join/:id', async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+
+
+
+// ManageEvents api
+app.get('/manage-events/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  // Ekhane organizerEmail ba email jekono ekta match korlei data dibe
+  const result = await eventsCollection.find({ 
+    $or: [
+      { organizerEmail: email },
+      { email: email }
+    ] 
+  }).toArray();
+  
+  res.send(result);
+});
+
+// Edit ManageEvents api
+app.patch('/manage-events/:id', async (req, res) =>{
+  const {id}= req.params
+  const updatedData = req.body
+  const result = await eventsCollection.updateOne(
+    {_id: new ObjectId(id)},
+    {$set:updatedData}
+  )
+  res.send(result);
+})
+
+
+
+
+
 
 
 
