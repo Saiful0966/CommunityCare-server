@@ -33,13 +33,31 @@ app.post("/add-events", async (req, res) => {
   res.send(result);
 });
 
+// Upcoming Events page api  
+
+// app.get('/upcoming-events', async(req, res) =>{
+//   const result = await eventsCollection.find().toArray();
+//   res.send(result);
+
+// })
 
 
-app.get('/upcoming-events', async(req, res) =>{
-  const result = await eventsCollection.find().toArray();
+app.get("/upcoming-events", async (req, res) => {
+  const result = await eventsCollection
+    .find()
+    .sort({ eventDate: 1 })
+    .limit(6)
+    .toArray();
+
   res.send(result);
+});
 
-})
+
+
+
+
+
+
 
 // Detale page api
 
@@ -116,6 +134,53 @@ app.delete('/manage-events/:id', async(req, res) =>{
  res.json(result)
 })
 
+
+
+
+
+
+// joined-events page api 
+
+// joined-events page api
+app.get("/joined-events/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+
+    const joinedEvents = await eventsCollection
+      .find({
+        "volunteers.email": email,
+      })
+      .toArray();
+
+    res.send(joinedEvents);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      message: "Failed to fetch joined events",
+    });
+  }
+});
+
+
+
+
+// Gallery  api 
+app.get("/gallery-events", async (req, res) => {
+  try {
+    const result = await eventsCollection
+      .find()
+      .sort({ _id: -1 })
+      .limit(6)
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      message: "Failed to fetch gallery events",
+    });
+  }
+});
 
 
 
