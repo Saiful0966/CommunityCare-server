@@ -8,7 +8,13 @@ import {createRemoteJWKSet, jwtVerify} from "jose";
 const PORT = 5000;
 
 const app = express();
-app.use(cors());
+// app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 const client = new MongoClient(process.env.MONGODB_URI);
@@ -34,7 +40,7 @@ const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   console.log("Authorization Header:", authHeader);
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith("Bearer")) {
     return res.status(401).send({
       message: "Unauthorized access",
     });
@@ -189,6 +195,22 @@ app.get("/joined-events/:email", verifyToken, async (req, res) => {
 
 
 // Gallery  api 
+// app.get("/gallery-events", async (req, res) => {
+//   try {
+//     const result = await eventsCollection
+//       .find()
+//       .sort({ _id: -1 })
+//       .limit(6)
+//       .toArray();
+
+//     res.send(result);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send({
+//       message: "Failed to fetch gallery events",
+//     });
+//   }
+// });
 app.get("/gallery-events", async (req, res) => {
   try {
     const result = await eventsCollection
@@ -199,9 +221,11 @@ app.get("/gallery-events", async (req, res) => {
 
     res.send(result);
   } catch (error) {
-    console.error(error);
+    console.error("Gallery Error:", error);
+
     res.status(500).send({
       message: "Failed to fetch gallery events",
+      error: error.message,
     });
   }
 });
