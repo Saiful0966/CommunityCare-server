@@ -211,7 +211,7 @@ app.get("/joined-events/:email", verifyToken, async (req, res) => {
 //     });
 //   }
 // });
-app.get("/gallery-events", async (req, res) => {
+app.get("/gallery-events", verifyToken, async (req, res) => {
   try {
     const result = await eventsCollection
       .find()
