@@ -2,6 +2,7 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
+import {createRemoteJWKSet, jwtVerify} from "jose";
 
 
 const PORT = 5000;
@@ -26,49 +27,84 @@ connectToMongoDB();
 const database = client.db("communityCareDB");
 const eventsCollection = database.collection("events");
 
-app.post("/add-events", async (req, res) => {
+
+// middleware
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  console.log("Authorization Header:", authHeader);
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({
+      message: "Unauthorized access",
+    });
+  }
+
+  const token = authHeader.split(" ")[1]; 
+  console.log("JWT Token:", token);
+
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+   const JWKS = createRemoteJWKSet(new URL('http://localhost:3000/api/auth/jwks'))
+ 
+   try {
+    const {payload} = await jwtVerify (token, JWKS)
+    req.user = payload;
+    next();
+   } catch (error) {
+   return res.status(500).send({msg:"Server error"});
+    
+   }
+
+};
+
+
+
+app.post("/add-events", verifyToken, async (req, res) => {
   const eventData = req.body;
   const result = await eventsCollection.insertOne(eventData);
   console.log(result);
   res.send(result);
 });
 
+
+
 // Upcoming Events page api  
-
-// app.get('/upcoming-events', async(req, res) =>{
-//   const result = await eventsCollection.find().toArray();
-//   res.send(result);
-
-// })
-
-
-app.get("/upcoming-events", async (req, res) => {
-  const result = await eventsCollection
-    .find()
-    .sort({ eventDate: 1 })
-    .limit(6)
-    .toArray();
-
+app.get('/upcoming-events', verifyToken, async(req, res) =>{
+  const result = await eventsCollection.find().toArray();
   res.send(result);
+
+})
+
+
+// recent-upcoming-events
+app.get("/recent-upcoming-events", verifyToken, async (req, res) => {
+  try {
+    const result = await eventsCollection
+      .find({ eventDate: { $exists: true, $ne: null } })
+      .sort({ eventDate: 1 }) 
+      .limit(6)
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ error: "Failed to fetch events" });
+  }
 });
 
 
 
-
-
-
-
-
 // Detale page api
-
-
-app.get('/upcoming-events/:id', async (req, res) => {
+app.get('/upcoming-events/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     const result = await eventsCollection.find({ _id: new ObjectId(id) }).toArray();
     res.send(result[0]);
+    
 })
 
-app.patch('/upcoming-events/join/:id', async (req, res) => {
+
+app.patch('/upcoming-events/join/:id', verifyToken,  async (req, res) => {
   const id = req.params.id;
   const volunteer = req.body;
   
@@ -94,13 +130,12 @@ app.patch('/upcoming-events/join/:id', async (req, res) => {
 });
 
 
-
-
 // ManageEvents api
-app.get('/manage-events/:email', async (req, res) => {
+app.get('/manage-events/:email', verifyToken, async (req, res) => {
   const { email } = req.params;
+
   
-  // Ekhane organizerEmail ba email jekono ekta match korlei data dibe
+// Ekhane organizerEmail ba email jekono ekta match korlei data dibe
   const result = await eventsCollection.find({ 
     $or: [
       { organizerEmail: email },
@@ -112,7 +147,7 @@ app.get('/manage-events/:email', async (req, res) => {
 });
 
 // Edit ManageEvents api
-app.patch('/manage-events/:id', async (req, res) =>{
+app.patch('/manage-events/:id', verifyToken, async (req, res) =>{
   const {id}= req.params
   const updatedData = req.body
   const result = await eventsCollection.updateOne(
@@ -123,29 +158,19 @@ app.patch('/manage-events/:id', async (req, res) =>{
 })
 
 
-
-
 // Delete ManageEvents api
-
-
-app.delete('/manage-events/:id', async(req, res) =>{
+app.delete('/manage-events/:id', verifyToken, async(req, res) =>{
  const {id}= req.params 
  const result = await eventsCollection.deleteOne({_id: new ObjectId(id)})
  res.json(result)
 })
 
 
-
-
-
-
-// joined-events page api 
-
 // joined-events page api
-app.get("/joined-events/:email", async (req, res) => {
+// joined-events page api
+app.get("/joined-events/:email", verifyToken, async (req, res) => {
   try {
     const email = req.params.email;
-
     const joinedEvents = await eventsCollection
       .find({
         "volunteers.email": email,
@@ -160,7 +185,6 @@ app.get("/joined-events/:email", async (req, res) => {
     });
   }
 });
-
 
 
 
