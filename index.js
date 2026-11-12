@@ -247,8 +247,14 @@ app.get("/gallery-events", async (req, res) => {
 
 
 
+// app.get("/", (req, res) => {
+//   res.send({ message: "server is running fine" });
+// });
 app.get("/", (req, res) => {
-  res.send({ message: "server is running fine" });
+  res.send({
+    message: "server is running fine",
+    version: "NEW API CODE TEST",
+  });
 });
 
 app.listen(PORT, () => {
