@@ -59,7 +59,7 @@ const verifyToken = async (req, res, next) => {
     req.user = payload;
     next();
    } catch (error) {
-   return res.status(500).send({msg:"Server error"});
+   return res.status(401).send({msg:"Invalid token"});
     
    }
 
@@ -76,16 +76,29 @@ app.post("/add-events", verifyToken, async (req, res) => {
 
 
 
-// Upcoming Events page api  
-app.get('/upcoming-events', verifyToken, async(req, res) =>{
-  const result = await eventsCollection.find().toArray();
-  res.send(result);
+// Upcoming Events page api 
+ 
+// app.get('/upcoming-events', async(req, res) =>{
+//   const result = await eventsCollection.find().toArray();
+//   res.send(result);
 
-})
+// })
+
+app.get("/upcoming-events", async (req, res) => {
+  try {
+    const result = await eventsCollection.find().toArray();
+    res.send(result);
+  } catch (error) {
+    console.error("Upcoming Events Error:", error);
+    res.status(500).send({
+      message: "Failed to fetch upcoming events",
+    });
+  }
+});
 
 
 // recent-upcoming-events
-app.get("/recent-upcoming-events", verifyToken, async (req, res) => {
+app.get("/recent-upcoming-events", async (req, res) => {
   try {
     const result = await eventsCollection
       .find({ eventDate: { $exists: true, $ne: null } })
@@ -211,7 +224,7 @@ app.get("/joined-events/:email", verifyToken, async (req, res) => {
 //     });
 //   }
 // });
-app.get("/gallery-events", verifyToken, async (req, res) => {
+app.get("/gallery-events", async (req, res) => {
   try {
     const result = await eventsCollection
       .find()
